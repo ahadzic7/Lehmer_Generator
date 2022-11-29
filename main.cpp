@@ -61,7 +61,7 @@ std::vector<bool> primeNumber(int range, std::vector<int> &rangePrimes) {
     return primes;
 }
 
-bool isPrime(ull n) {
+bool isPrime(const ull n) {
     for(int i = 2; i <= n / i; i++)
         if(n % i == 0)
             return false;
@@ -80,7 +80,8 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
             compositeFactors.push_back(tmp);
             composites.push_back(primes[j] * primes[i]);
             if(primes[i] == 2) {
-                candidates.emplace_back(primes[j] * primes[i]);
+                if(isPrime(primes[j] * primes[i] + 1))
+                    candidates.emplace_back(primes[j] * primes[i]);
             }
         }
     }
@@ -92,7 +93,7 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
         for (int k = 0; k < primes.size(); k++) {
             bool append(false);
             int lastIndex(compositeFactors[oldSize].size() - 1);
-            
+
             for (int i = oldSize; i < size; i++) {
                 if (primes[k] == compositeFactors[i][lastIndex]) {
                     append = true;
@@ -101,14 +102,14 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
                 if (append) {
                     auto tmp(compositeFactors[i]);
                     ull mul = composites[i] * primes[k];
-                    if(mul <= Mmax) {
+                    if(mul < Mmax) {
                         add = true;
                         tmp.push_back(primes[k]);
                         compositeFactors.push_back(tmp);
                         composites.push_back(mul);
                         if(mul % 2 == 0) {
                             if(isPrime(mul + 1))
-                                candidates.push_back(mul + 1);
+                                candidates.push_back(mul);
                         }
                     }
                 }
@@ -121,7 +122,7 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
 
     //print_factors(compositeFactors, composites);
     //print_factors2(compositeFactors, composites);
-    //print_candidates(candidates);
+    print_candidates(candidates);
 
     return candidates;
 }
@@ -136,11 +137,7 @@ void solution() {
     std::vector<bool> primes(primeNumber(D, rangePrimes));
 
     auto candidates (compositesGenerator(rangePrimes, Mmax));
-    //print_candidates(candidates);
 
-
-
-    //printf("%d", candidates.size());
 
 }
 
