@@ -14,9 +14,9 @@ void print_factors(std::vector<std::vector<int>> &compositeFactors, std::vector<
         it++;
         printf("%d) ", it);
         for (int i = fac.size() - 1; i >= 0; i--) {
-            printf("%d", fac[i]);
+            printf(" %d,", fac[i]);
         }
-        printf(" = %llu\n", composites[it - 1]);
+        printf(" = %llu \n", composites[it - 1]);
     }
 }
 void print_factors2(std::vector<std::vector<int>> &compositeFactors, std::vector<ull> composites) {
@@ -29,10 +29,10 @@ void print_factors2(std::vector<std::vector<int>> &compositeFactors, std::vector
             c++;
             printf("%d) ", c);
             for (int i = fac.size() - 1; i >= 0; i--) {
-                printf("%d", fac[i]);
+                printf(" %d,", fac[i]);
             }
 
-            printf(" = %llu\n", composites[it - 1]);
+            printf(" = %llu \n", composites[it - 1]);
 
         }
     }
@@ -45,13 +45,29 @@ void print_candidates(std::vector<ull> candidates) {
     }
 }
 
+void allPossiblePrimeFactors(std::vector<int> &possiblePrimes, unsigned long long D){
+    std::vector<bool> primes(D+1,true);
+
+    for(int i = 2; i * i <= D; i++){
+        if(primes[i]){
+            for(int j = i * i; j <= D; j += i){
+                primes[j] = false;
+            }
+        }
+    }
+
+    for(int i = 2; i <= D; i++){
+        if(primes[i])
+            possiblePrimes.push_back(i);
+        }
+}
 
 std::vector<bool> primeNumber(int range, std::vector<int> &rangePrimes) {
     std::vector<bool> primes(range + 1, true);
 
     for(int p = 2; p <= range; p++) {
         if(primes[p]) {
-            for(int i = p * p; i < range; i += p) {
+            for(int i = p * p; i <= range; i += p) {
                 primes[i] = false;
             }
             rangePrimes.emplace_back(p);
@@ -115,6 +131,7 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
                 }
             }
         }
+
         if(!add)
             break;
         oldSize = size;
@@ -139,6 +156,17 @@ void solution() {
     auto candidates (compositesGenerator(rangePrimes, Mmax));
 
 
+    int x = 0;
+    for(int i = 0; i < candidates.size(); i++) {
+        for(int j = i + 1; j < candidates.size(); j++) {
+            if(candidates[i] == candidates[j]) {
+                x++;
+                //printf("duplikat %d\n", candidates[i]);
+            }
+
+        }
+    }
+    printf("%d", x);
 }
 
 int main() {
