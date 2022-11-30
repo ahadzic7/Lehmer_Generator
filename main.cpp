@@ -1,10 +1,11 @@
 #include <cstdio>
 #include <ctime>
 #include <vector>
-#include <list>
-#include <queue>
-#include <set>
 #include <cstring>
+#include <climits>
+#include <limits>
+#include <cmath>
+
 
 typedef unsigned long long ull;
 
@@ -45,24 +46,16 @@ void print_candidates(std::vector<ull> candidates) {
     }
 }
 
-void allPossiblePrimeFactors(std::vector<int> &possiblePrimes, unsigned long long D){
-    std::vector<bool> primes(D+1,true);
+void print_candidates_rs(std::vector<ull> candidates, std::vector<int> rs) {
+    int it = 0;
+    for(auto c: candidates) {
 
-    for(int i = 2; i * i <= D; i++){
-        if(primes[i]){
-            for(int j = i * i; j <= D; j += i){
-                primes[j] = false;
-            }
-        }
+        printf("%d) %llu, r = %d\n", it + 1, c, rs[it]);
+        it++;
     }
-
-    for(int i = 2; i <= D; i++){
-        if(primes[i])
-            possiblePrimes.push_back(i);
-        }
 }
 
-std::vector<bool> primeNumber(int range, std::vector<int> &rangePrimes) {
+void primeNumber(int range, std::vector<int> &rangePrimes) {
     std::vector<bool> primes(range + 1, true);
 
     for(int p = 2; p <= range; p++) {
@@ -73,14 +66,22 @@ std::vector<bool> primeNumber(int range, std::vector<int> &rangePrimes) {
             rangePrimes.emplace_back(p);
         }
     }
-
-    return primes;
 }
 
 bool isPrime(const ull n) {
-    for(int i = 2; i <= n / i; i++)
-        if(n % i == 0)
+    if(n == 2) return true;
+    if(n == 3) return true;
+
+    if(n % 2 == 0 || n % 3 == 0)
+        return false;
+
+
+    double root(std::sqrt(n));
+    for(int i = 5; i <= root; i += 6)
+        if(n % i == 0 || n % (i + 2) == 0)
             return false;
+
+
     return true;
 }
 
@@ -89,15 +90,17 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
     std::vector<ull> composites;
     std::vector<ull> candidates{2};
 
-
     for(int i = 0; i < primes.size(); i++) {
         for(int j = i; j < primes.size(); j++) {
+
             std::vector<int>tmp{primes[j], primes[i]};
-            compositeFactors.push_back(tmp);
+            compositeFactors.emplace_back(tmp);
             composites.push_back(primes[j] * primes[i]);
+
             if(primes[i] == 2) {
-                if(isPrime(primes[j] * primes[i] + 1))
+                if(primes[j] * primes[i] < Mmax && isPrime(primes[j] * primes[i] + 1)) {
                     candidates.emplace_back(primes[j] * primes[i]);
+                }
             }
         }
     }
@@ -106,21 +109,22 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
     while (true){
         bool add(false);
         int size(compositeFactors.size());
-        for (int k = 0; k < primes.size(); k++) {
+
+        for (int prime : primes) {
             bool append(false);
             int lastIndex(compositeFactors[oldSize].size() - 1);
 
             for (int i = oldSize; i < size; i++) {
-                if (primes[k] == compositeFactors[i][lastIndex]) {
+                if (prime == compositeFactors[i][lastIndex]) {
                     append = true;
                 }
 
                 if (append) {
                     auto tmp(compositeFactors[i]);
-                    ull mul = composites[i] * primes[k];
+                    ull mul = composites[i] * prime;
                     if(mul < Mmax) {
                         add = true;
-                        tmp.push_back(primes[k]);
+                        tmp.push_back(prime);
                         compositeFactors.push_back(tmp);
                         composites.push_back(mul);
                         if(mul % 2 == 0) {
@@ -139,9 +143,91 @@ std::vector<ull> compositesGenerator(const std::vector<int> &primes, const ull M
 
     //print_factors(compositeFactors, composites);
     //print_factors2(compositeFactors, composites);
-    print_candidates(candidates);
+    //print_candidates(candidates);
 
     return candidates;
+}
+
+ull overflowSafeMultiplication(ull x, ull y, const ull modulo){
+    unsigned long long res = 0;
+    while (y) {
+        if (y & 1)
+            res = (res + x) % modulo;
+
+        x = (2 * x) % modulo;
+
+        y >>= 1;
+    }
+    return res;
+}
+
+ull modExp(ull base, ull power, ull modulo) {
+    if (base == 0) return 0;
+
+    ull result = 1;
+
+    base %= modulo;
+
+    while (power > 0) {
+        if (power & 1) {
+            if(base < modulo) {
+                if(base > std::numeric_limits<ull>::max() / result) {
+                    //overflow
+                    result = overflowSafeMultiplication(result, base, modulo);
+                }
+                else
+                    result = (result * base) % modulo;
+
+            }
+            else
+                result = ((result % modulo) * (base % modulo)) % modulo;
+        }
+
+        power = power >> 1;
+
+        if(base < modulo) {
+            if(base > std::numeric_limits<ull>::max() / base) {
+                //overflow
+                base = overflowSafeMultiplication(base, base, modulo);
+            }
+            else
+                base = (base * base) % modulo;
+        }
+        else
+            base = ((base % modulo) * (base % modulo)) % modulo;
+
+    }
+
+    return result;
+}
+
+int primitiveRootTest(const std::vector<ull> &candidates, const std::vector<int> &primes) {
+    int maxR(0);
+    for(ull m_1: candidates) {
+
+        for (int r = 2; ; r++) {
+            bool found = false;
+
+            for (int prime: primes) {
+                if (m_1 % prime == 0) {
+
+                    if (modExp(r, m_1 / prime, m_1 + 1) == 1) {
+                        found = true;
+                        break;
+                    }
+
+                }
+            }
+            if(!found) {
+                if(r > maxR)
+                    maxR = r;
+
+                break;
+            }
+        }
+    }
+
+    return maxR;
 }
 
 
@@ -150,23 +236,15 @@ void solution() {
     int D;
     scanf("%llu %d", &Mmax, &D);
 
-    std::vector<int> rangePrimes;
-    std::vector<bool> primes(primeNumber(D, rangePrimes));
+    std::vector<int> primes;
+    primeNumber(D, primes);
 
-    auto candidates (compositesGenerator(rangePrimes, Mmax));
+    auto candidates (compositesGenerator(primes, Mmax));
 
+    int maxR(primitiveRootTest(candidates, primes));
 
-    int x = 0;
-    for(int i = 0; i < candidates.size(); i++) {
-        for(int j = i + 1; j < candidates.size(); j++) {
-            if(candidates[i] == candidates[j]) {
-                x++;
-                //printf("duplikat %d\n", candidates[i]);
-            }
+    printf("%zu %d", candidates.size(), maxR);
 
-        }
-    }
-    printf("%d", x);
 }
 
 int main() {
@@ -177,7 +255,7 @@ int main() {
 
     end = clock();
 
-    printf("\nExecution time: %f", (end - start) / 1000.);
+    //printf("\nExecution time: %f", (end - start) / 1000.);
 
     return 0;
 }
